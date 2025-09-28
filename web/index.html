@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <title>GuessWhat 🎨</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #1e1e2e;
+      color: #f0f0f0;
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .card {
+      background: #2b2b3c;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+
+    img.logo {
+      width: 240px;
+      display: block;
+      margin: 0 auto 10px;
+    }
+
+    .game-layout {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .sidebar {
+      background: #2c2f38;
+      padding: 10px;
+      width: 250px;
+      overflow-y: auto;
+    }
+
+    .sidebar.right {
+      border-left: 1px solid #333;
+    }
+
+    .sidebar.left {
+      border-right: 1px solid #333;
+    }
+
+    .main-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: start;
+      align-items: center;
+      padding: 10px;
+      gap: 10px;
+    }
+
+    #word-display {
+      font-size: 22px;
+      background: #222;
+      padding: 10px 20px;
+      border-radius: 10px;
+      letter-spacing: 2px;
+      border: 1px solid #333;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    #word-timer {
+      font-size: 20px;
+      color: #ffcc00;
+      font-weight: bold;
+    }
+
+    input, button {
+      background: #1e1e2e;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 6px;
+      padding: 6px 10px;
+      outline: none;
+    }
+
+    button {
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #444;
+    }
+
+    #log {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      height: 70vh;
+      overflow-y: auto;
+      background: #1b1b25;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+
+    #log li {
+      padding: 3px 0;
+      border-bottom: 1px solid #333;
+      font-size: 0.95em;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .player-label {
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    #player-list {
+      list-style: none;
+      padding: 0;
+      font-size: 0.95em;
+    }
+
+    #player-list li {
+      padding: 5px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .word-choice {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #2c2f38;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0,0,0,0.6);
+      z-index: 999;
+    }
+
+    .word-choice button {
+      margin: 8px;
+      background: #e05588;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .word-choice button:hover {
+      background: #ff77a8;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #222;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      opacity: 0;
+      transition: all 0.2s ease;
+      z-index: 9999;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="home" class="card">
+    <img src="guesswhat.png" alt="GuessWhat Logo" class="logo">
+    <h1>Bienvenue sur GuessWhat 🎨</h1>
+
+    <input id="pseudo-home" placeholder="Pseudo" maxlength="16" />
+    <br/>
+    <button id="btn-create" onclick="onCreateRoomClick()" disabled>Créer une room</button>
+
+    <div class="or" style="margin:8px 0; font-weight:bold; color:#888;">ou</div>
+
+    <input id="roomcode" placeholder="Code room" maxlength="5"/>
+    <button id="btn-join" onclick="joinRoom()" disabled>Rejoindre</button>
+
+    <div id="home-error" class="error" style="color:#ff5e5e; margin-top:8px;"></div>
+  </div>
+
+  <div id="game" class="game-layout" style="display:none">
+    
+    <aside class="sidebar left">
+      <div class="player-label">👥 Joueurs :</div>
+      <ul id="player-list" style="max-height: 60vh; overflow-y: auto;"></ul>
+    </aside>
+
+    <main class="main-center">
+      <div style="display:flex; align-items:center; gap:20px;">
+        <div id="word-display">Mot : ...</div>
+        <div id="word-timer">--</div>
+      </div>
+      <div id="draw-container" style="width:100%;position:relative;">
+        <div id="room-config" class="card"
+             style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+             z-index:10;max-width:700px;width:90%;background:rgba(35,39,47,0.98);
+             box-shadow:0 4px 32px #000a;">
+        </div>
+      </div>
+    </main>
+
+    <aside class="sidebar right" style="display:none;">
+      <h3>💬 Chat</h3>
+      <ul id="log"></ul>
+      <div class="input-row">
+        <input id="msg" placeholder="Tape un message..." maxlength="64" autocomplete="off"/>
+        <button id="send-btn" onclick="sendMsg()">Envoyer</button>
+      </div>
+    </aside>
+  </div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
