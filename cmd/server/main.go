@@ -333,7 +333,7 @@ func wsHandler(ws *websocket.Conn) {
 			}
 			text := strings.TrimSpace(msg.Content)
 			if text == "" || player == room.DrawPlayer {
-				continue 
+				continue
 			}
 
 			if room.CurrentWord != "" && strings.EqualFold(text, room.CurrentWord) && !room.Guessed[player] {

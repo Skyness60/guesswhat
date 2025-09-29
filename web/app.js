@@ -1,3 +1,6 @@
+// ===============================
+// 🌍 Globals
+// ===============================
 let ws = null;
 let pseudo = "";
 let currentRoomCode = "";
@@ -7,6 +10,7 @@ let currentWord = "";
 let hasGuessed = false;
 let timerInterval = null;
 
+// Dessin
 let canvas, ctx;
 let drawing = false;
 let currentTool = "pencil";
@@ -15,6 +19,7 @@ let currentSize = 5;
 let lastPos = null;
 const historyStack = [];
 
+// Palette
 const PALETTE = [
   "#ffffff", "#000000", "#888888", "#444444",
   "#ff0000", "#990000", "#ff8000", "#cc6600",
@@ -24,6 +29,9 @@ const PALETTE = [
   "#ffe4b5", "#bfa76f", "#7a5230", "#3d2615"
 ];
 
+// ===============================
+// 🔧 Helpers
+// ===============================
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 
@@ -42,16 +50,18 @@ function revealWord(word) {
   $("#word-display").textContent = `Mot : ${word}`;
 }
 
+// ===============================
+// 🏠 Accueil
+// ===============================
 function onCreateRoomClick() {
   const error = $("#home-error");
   const p = $("#pseudo-home").value.trim();
-  const type = $("#room-type").value;
   if (!p) return (error.textContent = "Pseudo obligatoire");
 
   pseudo = p;
   connectWS(() => {
     ws.send(JSON.stringify({ type: "nickname", content: pseudo }));
-    ws.send(JSON.stringify({ type: "create_room", content: type }));
+    ws.send(JSON.stringify({ type: "create_room" }));
   });
 }
 
@@ -67,17 +77,24 @@ function joinRoom() {
   currentRoomCode = code;
   error.textContent = "";
 
+  console.log("➡️ Tentative de rejoindre la room :", code);
+
   if (!ws || ws.readyState !== WebSocket.OPEN) {
     connectWS(() => {
+      console.log("✅ WS connectée, envoi du join_room...");
       ws.send(JSON.stringify({ type: "nickname", content: pseudo }));
       ws.send(JSON.stringify({ type: "join_room", content: currentRoomCode }));
     });
   } else {
+    console.log("♻️ WS déjà ouverte, envoi direct du join_room...");
     ws.send(JSON.stringify({ type: "nickname", content: pseudo }));
     ws.send(JSON.stringify({ type: "join_room", content: currentRoomCode }));
   }
 }
 
+// ===============================
+// 🎮 Interface jeu
+// ===============================
 function enterRoomUI() {
   setVisible($("#home"), false);
   setVisible($("#game"), true);
@@ -108,8 +125,12 @@ function hideRoomConfig() {
   setVisible($("#room-config"), false);
 }
 
+// ===============================
+// 🚀 Partie
+// ===============================
 function hostStartGame() {
   if (isHost && ws) {
+    console.log("🚀 L’hôte démarre la partie");
     ws.send(JSON.stringify({ type: "start_game" }));
   }
 }
@@ -121,6 +142,7 @@ function startGameUI() {
   const drawContainer = $("#draw-container");
   drawContainer.innerHTML = "";
 
+  // Canvas
   canvas = document.createElement("canvas");
   canvas.id = "draw";
   canvas.width = 1200;
@@ -136,9 +158,13 @@ function startGameUI() {
 
   injectTools();
   bindDrawingEvents();
+
   setDrawingEnabled(isDrawingPlayer);
 }
 
+// ===============================
+// 🎨 Outils
+// ===============================
 function injectTools() {
   const container = document.createElement("div");
   container.className = "toolbar";
@@ -213,6 +239,9 @@ function setDrawingEnabled(enabled) {
   canvas.style.opacity = enabled ? "1" : "0.5";
 }
 
+// ===============================
+// ✏️ Dessin & Réseau
+// ===============================
 function bindDrawingEvents() {
   if (!canvas) return;
 
@@ -249,7 +278,7 @@ function bindDrawingEvents() {
 
 function getPos(e) {
   const rect = canvas.getBoundingClientRect();
-  return { x: Math.floor(e.clientX - rect.left), y: Math.floor(e.clientY - rect.top) };
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
 function drawLine(from, to, color, size) {
@@ -300,6 +329,9 @@ function hexToRgb(hex) {
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
+// ===============================
+// 💬 Chat
+// ===============================
 function sendMsg() {
   const input = $("#msg");
   const content = input.value.trim();
@@ -308,6 +340,9 @@ function sendMsg() {
   input.value = "";
 }
 
+// ===============================
+// ⏱️ Timer
+// ===============================
 function startTimer(seconds) {
   clearInterval(timerInterval);
   const timer = $("#word-timer");
@@ -325,12 +360,203 @@ function stopTimer() {
   $("#word-timer").textContent = `0s`;
 }
 
+// ===============================
+// 🌐 WebSocket
+// ===============================
 function connectWS(onReady) {
+  console.log("🔌 Connexion au serveur WebSocket...");
   ws = new WebSocket("ws://" + location.host + "/ws");
-  ws.onopen = () => onReady?.();
+
+  ws.onopen = () => {
+    console.log("✅ WebSocket connectée !");
+    onReady?.();
+  };
+
   ws.onmessage = async (e) => {
     const text = e.data instanceof Blob ? await e.data.text() : e.data;
     handleMsg(text);
   };
 }
 
+// ===============================
+// 🔥 Gestion des messages
+// ===============================
+function handleMsg(data) {
+  let msg;
+  try { msg = JSON.parse(data); } catch { return; }
+
+  switch (msg.type) {
+    case "room_created":
+      currentRoomCode = msg.content;
+      isHost = true;
+      enterRoomUI();
+      showRoomConfig(currentRoomCode);
+      break;
+
+    case "room_joined":
+      currentRoomCode = msg.content;
+      isHost = false;
+      enterRoomUI();
+      showRoomConfig(currentRoomCode);
+      break;
+
+    case "players":
+      const players = JSON.parse(msg.content);
+      const ul = $("#player-list");
+      ul.innerHTML = "";
+      players.forEach(p => {
+        const li = document.createElement("li");
+        li.textContent = p;
+        ul.appendChild(li);
+      });
+      updateStartButtonState();
+      break;
+
+    case "host":
+      isHost = (msg.content === pseudo);
+      updateStartButtonState();
+      break;
+
+    case "info":
+    case "chat":
+      log(msg.content);
+      if (msg.content.includes("a trouvé le mot")) {
+        hasGuessed = true;
+        revealWord(currentWord);
+        stopTimer();
+      }
+      break;
+
+    case "choose_word":
+      showWordChoice(JSON.parse(msg.content));
+      break;
+
+    case "start_drawing":
+      isDrawingPlayer = true;
+      currentWord = msg.content;
+      revealWord(currentWord);
+      startGameUI();
+      startTimer(60);
+      break;
+
+    case "start_drawing_public":
+      isDrawingPlayer = false;
+      currentWord = msg.content;
+      $("#word-display").textContent = `Mot : ${"_ ".repeat(currentWord.length)}`;
+      startGameUI();
+      startTimer(60);
+      break;
+
+    case "hint":
+      $("#word-display").textContent = `Indice : ${msg.content}`;
+      break;
+
+    case "draw":
+      const d = JSON.parse(msg.content);
+      drawLine(d.from, d.to, d.color, d.size);
+      break;
+
+    case "fill":
+      const f = JSON.parse(msg.content);
+      floodFill(f.x, f.y, f.color);
+      break;
+
+    case "undo":
+      undoLocal();
+      break;
+
+    case "clear":
+      clearDraw();
+      break;
+
+    case "round_end":
+      stopTimer();
+      revealWord(msg.content);
+      log(`🏁 Tour terminé ! Le mot était "${msg.content}"`);
+      break;
+
+    case "game_over":
+      stopTimer();
+      alert("🏁 " + msg.content);
+      break;
+
+    case "error":
+      alert(msg.content);
+      break;
+  }
+}
+
+// ===============================
+// ↩️ Undo & Effacer
+// ===============================
+function sendUndo() {
+  if (!isDrawingPlayer || !ws) return;
+  undoLocal();
+  ws.send(JSON.stringify({ type: "undo" }));
+}
+
+function undoLocal() {
+  if (historyStack.length === 0 || !ctx) return;
+  const last = historyStack.pop();
+  ctx.putImageData(last, 0, 0);
+}
+
+function clearDraw() {
+  if (!ctx) return;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (isDrawingPlayer && ws) {
+    ws.send(JSON.stringify({ type: "clear" }));
+  }
+}
+
+// ===============================
+// 🔤 Choix du mot
+// ===============================
+function showWordChoice(words) {
+  const div = document.createElement("div");
+  div.className = "word-choice";
+  div.innerHTML = `
+    <h2>Choisis un mot à dessiner 🎨</h2>
+    ${words.map(w => `<button onclick="chooseWord('${w}')">${w}</button>`).join("")}
+  `;
+  document.body.appendChild(div);
+}
+
+window.chooseWord = (word) => {
+  ws.send(JSON.stringify({ type: "choose_word", content: word }));
+  document.querySelector(".word-choice")?.remove();
+};
+
+// ===============================
+// 🧭 Init
+// ===============================
+window.addEventListener("DOMContentLoaded", () => {
+  const pseudoInput = $("#pseudo-home");
+  const codeInput = $("#roomcode");
+  const btnCreate = $("#btn-create");
+  const btnJoin = $("#btn-join");
+
+  function checkInputs() {
+    const hasPseudo = pseudoInput.value.trim().length > 0;
+    const hasCode = codeInput.value.trim().length > 0;
+    btnCreate.disabled = !hasPseudo;
+    btnJoin.disabled = !(hasPseudo && hasCode);
+  }
+
+  pseudoInput.addEventListener("input", checkInputs);
+  codeInput.addEventListener("input", checkInputs);
+  checkInputs();
+
+  pseudoInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !btnCreate.disabled) onCreateRoomClick();
+  });
+
+  codeInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !btnJoin.disabled) joinRoom();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && document.activeElement.id === "msg") sendMsg();
+  });
+});

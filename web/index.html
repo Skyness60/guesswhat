@@ -182,6 +182,7 @@
       transform: translateX(-50%) translateY(0);
     }
   </style>
+
 </head>
 
 <body>
@@ -203,7 +204,6 @@
   </div>
 
   <div id="game" class="game-layout" style="display:none">
-    
     <aside class="sidebar left">
       <div class="player-label">👥 Joueurs :</div>
       <ul id="player-list" style="max-height: 60vh; overflow-y: auto;"></ul>
@@ -233,7 +233,33 @@
     </aside>
   </div>
 
-<script src="app.js"></script>
+  <!-- Ton script principal -->
+  <script src="app.js"></script>
+
+  <!-- ✅ Script pour activer les boutons -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const pseudoInput = document.getElementById("pseudo-home");
+      const roomInput = document.getElementById("roomcode");
+      const btnCreate = document.getElementById("btn-create");
+      const btnJoin = document.getElementById("btn-join");
+
+      function updateButtons() {
+        const hasPseudo = pseudoInput.value.trim().length > 0;
+        const hasRoom = roomInput.value.trim().length > 0;
+
+        // Activer "Créer" si pseudo non vide
+        btnCreate.disabled = !hasPseudo;
+
+        // Activer "Rejoindre" si pseudo ET code room non vides
+        btnJoin.disabled = !(hasPseudo && hasRoom);
+      }
+
+      pseudoInput.addEventListener("input", updateButtons);
+      roomInput.addEventListener("input", updateButtons);
+      updateButtons(); 
+    });
+  </script>
 
 </body>
 </html>
