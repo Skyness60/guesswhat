@@ -1,6 +1,3 @@
-// ===============================
-// 🌍 Globals
-// ===============================
 let ws = null;
 let pseudo = "";
 let currentRoomCode = "";
@@ -10,7 +7,6 @@ let currentWord = "";
 let hasGuessed = false;
 let timerInterval = null;
 
-// Dessin
 let canvas, ctx;
 let drawing = false;
 let currentTool = "pencil";
@@ -19,7 +15,6 @@ let currentSize = 5;
 let lastPos = null;
 const historyStack = [];
 
-// Palette
 const PALETTE = [
   "#ffffff", "#000000", "#888888", "#444444",
   "#ff0000", "#990000", "#ff8000", "#cc6600",
@@ -29,9 +24,6 @@ const PALETTE = [
   "#ffe4b5", "#bfa76f", "#7a5230", "#3d2615"
 ];
 
-// ===============================
-// 🔧 Helpers
-// ===============================
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 
@@ -50,9 +42,6 @@ function revealWord(word) {
   $("#word-display").textContent = `Mot : ${word}`;
 }
 
-// ===============================
-// 🏠 Accueil
-// ===============================
 function onCreateRoomClick() {
   const error = $("#home-error");
   const p = $("#pseudo-home").value.trim();
@@ -92,9 +81,7 @@ function joinRoom() {
   }
 }
 
-// ===============================
-// 🎮 Interface jeu
-// ===============================
+
 function enterRoomUI() {
   setVisible($("#home"), false);
   setVisible($("#game"), true);
@@ -125,9 +112,7 @@ function hideRoomConfig() {
   setVisible($("#room-config"), false);
 }
 
-// ===============================
-// 🚀 Partie
-// ===============================
+
 function hostStartGame() {
   if (isHost && ws) {
     console.log("🚀 L’hôte démarre la partie");
@@ -142,7 +127,6 @@ function startGameUI() {
   const drawContainer = $("#draw-container");
   drawContainer.innerHTML = "";
 
-  // Canvas
   canvas = document.createElement("canvas");
   canvas.id = "draw";
   canvas.width = 1200;
@@ -162,9 +146,6 @@ function startGameUI() {
   setDrawingEnabled(isDrawingPlayer);
 }
 
-// ===============================
-// 🎨 Outils
-// ===============================
 function injectTools() {
   const container = document.createElement("div");
   container.className = "toolbar";
@@ -239,9 +220,6 @@ function setDrawingEnabled(enabled) {
   canvas.style.opacity = enabled ? "1" : "0.5";
 }
 
-// ===============================
-// ✏️ Dessin & Réseau
-// ===============================
 function bindDrawingEvents() {
   if (!canvas) return;
 
@@ -329,9 +307,6 @@ function hexToRgb(hex) {
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
-// ===============================
-// 💬 Chat
-// ===============================
 function sendMsg() {
   const input = $("#msg");
   const content = input.value.trim();
@@ -340,9 +315,7 @@ function sendMsg() {
   input.value = "";
 }
 
-// ===============================
-// ⏱️ Timer
-// ===============================
+
 function startTimer(seconds) {
   clearInterval(timerInterval);
   const timer = $("#word-timer");
@@ -360,9 +333,6 @@ function stopTimer() {
   $("#word-timer").textContent = `0s`;
 }
 
-// ===============================
-// 🌐 WebSocket
-// ===============================
 function connectWS(onReady) {
   console.log("🔌 Connexion au serveur WebSocket...");
   ws = new WebSocket("ws://" + location.host + "/ws");
@@ -378,9 +348,6 @@ function connectWS(onReady) {
   };
 }
 
-// ===============================
-// 🔥 Gestion des messages
-// ===============================
 function handleMsg(data) {
   let msg;
   try { msg = JSON.parse(data); } catch { return; }
@@ -486,9 +453,6 @@ function handleMsg(data) {
   }
 }
 
-// ===============================
-// ↩️ Undo & Effacer
-// ===============================
 function sendUndo() {
   if (!isDrawingPlayer || !ws) return;
   undoLocal();
@@ -510,9 +474,6 @@ function clearDraw() {
   }
 }
 
-// ===============================
-// 🔤 Choix du mot
-// ===============================
 function showWordChoice(words) {
   const div = document.createElement("div");
   div.className = "word-choice";
@@ -528,9 +489,6 @@ window.chooseWord = (word) => {
   document.querySelector(".word-choice")?.remove();
 };
 
-// ===============================
-// 🧭 Init
-// ===============================
 window.addEventListener("DOMContentLoaded", () => {
   const pseudoInput = $("#pseudo-home");
   const codeInput = $("#roomcode");

@@ -233,10 +233,8 @@
     </aside>
   </div>
 
-  <!-- Ton script principal -->
   <script src="app.js"></script>
 
-  <!-- ✅ Script pour activer les boutons -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const pseudoInput = document.getElementById("pseudo-home");
@@ -248,10 +246,8 @@
         const hasPseudo = pseudoInput.value.trim().length > 0;
         const hasRoom = roomInput.value.trim().length > 0;
 
-        // Activer "Créer" si pseudo non vide
         btnCreate.disabled = !hasPseudo;
 
-        // Activer "Rejoindre" si pseudo ET code room non vides
         btnJoin.disabled = !(hasPseudo && hasRoom);
       }
 
